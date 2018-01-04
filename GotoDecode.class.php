@@ -2,10 +2,7 @@
 
 class GotoDecode
 {
-    //private static $error;
-    //private static $msg;
-    //private static $content;
-    //private static $classCount;
+    private $fileName;
     public static function decode($file)
     {
         try {
@@ -14,26 +11,46 @@ class GotoDecode
             $fileContent = $obj->trimComments($fileContent);
             $classArr = $obj->splitClass($fileContent);
             $funcArr = $obj->splitFunc($classArr);
+            return $obj->saveAsFile($funcArr);
         } catch (Exception $e) {
             var_dump($e);
             return true;
         }
 
-        var_dump($funcArr);
-        exit;
+        //var_dump($funcArr);
+        //exit;
         //$this->splitFunc()
     }
 
     private function splitClass($fileContent)
     {
-        $fileContent = preg_replace('/\s*<\?php\s*/is', '', $fileContent);
+        $fileContent = preg_replace('/^\s*<\?php\s*|\?>\s*/is', '', $fileContent);
         $className = '[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*';
         //preg_match_all('/\s*((?:abstract\s*|final\s*)?(?:interface|trait|class)\s*'.$className.'\s*(?:extends\s*'.$className.')?(?:implements\s*'.$className.')?)\s*{/is',$this->$content,$matches,PREG_SET_ORDER);
-        $res = preg_split('/\s*((?:abstract\s*|final\s*)?(?:interface|trait|class)\s*' . $className . '\s*(?:extends\s*' . $className . ')?(?:implements\s*' . $className . ')?)\s*(?={)/is', $fileContent, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);//
-        $count = count($res);
-        if (!$res) {
+        $arrX = preg_split('/\s*((?:abstract\s*|final\s*)?(?:interface|trait|class)\s*' . $className . '\s*(?:extends\s*' . $className . ')?(?:implements\s*' . $className . ')?)\s*(?={)/is', $fileContent, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);//
+        if (!$arrX) {
             throw new Exception('划分类的时候出错');
         }
+        $arrY[]=$arrX[0];
+        $countX=count($arrX);
+        if($countX>1){
+            for($i=1;$i<$countX;$i++){
+                if(($braceIndex=strrpos($arrX[$i],'}'))!==false){
+                    $braceIndex=intval($braceIndex);
+                    $headString=substr($arrX[$i],0,$braceIndex+1);
+                    $tailString=trim(substr($arrX[$i],$braceIndex+1));
+                    $arrY[]=$headString;
+                    if(!empty($tailString)){
+                        $arrY[]=$tailString;
+                    }
+                }else{
+                    $arrY[]=$arrX[$i];
+                }
+            }
+        }
+        //var_dump($arrY);exit;
+
+        $count =count($arrY) ;
         $codeStack = [];
         /*
          * 根据这里特殊的数据格式来划分,普通代码,类名,类的{}部分
@@ -47,18 +64,19 @@ class GotoDecode
          *  ...
          * ]
          * */
+        //var_dump($arrY);exit;
         for ($i = 0; $i < $count; $i++) {
-            if (strpos($res[$i], ';') === false) {
-                $arr = ['className' => $res[$i]];
+            if (strpos($arrY[$i], ';') === false) {
+                $arr = ['className' => $arrY[$i]];
                 $i++;
-                $temp = preg_split('/^\s*({.*})(?!\S)/s', $res[$i], -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+                $temp = preg_split('/^\s*({.*})(?!\S)/s', $arrY[$i], -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
                 $arr['classContent'] = $temp[0];
                 $codeStack[] = $arr;
                 if (count($temp)>1&&!empty(trim($temp[1]))) {
                     $codeStack[] = $this->transGoto($temp[1]);
                 }
             } else {
-                $codeStack[] = $this->transGoto($res[$i]);
+                $codeStack[] = $this->transGoto($arrY[$i]);
             }
         }
         return $codeStack;
@@ -72,8 +90,8 @@ class GotoDecode
                 $string=preg_replace('/^\s*{|}\s*$/','',$v['classContent']);
                 $funcName = '[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*';
                 $res = preg_split('/\s*((?:public\s*|private\s*|protected\s*|final\s*|abstract\s*)?(?:static\s*)?function\s*' . $funcName . '\s*\(.*?\))\s*(?={)/is',$string, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+                $classArr[$k]['classContent']=[];
                 if(!empty($res)){
-                    $classArr[$k]['classContent']=[];
                     $count = count($res);
                     for ($i = 0; $i < $count; $i++) {
                         if (strpos($res[$i], ';') === false) {
@@ -91,6 +109,8 @@ class GotoDecode
                         }
                     }
                 }
+
+
             }
 
         }
@@ -186,12 +206,38 @@ class GotoDecode
         return $fileContent;
     }
 
+    private function saveAsFile($data){
+        //var_dump($data);exit;
+        $content='<?php'.PHP_EOL;
+        foreach($data as $k=>$v){
+            if(is_array($v)){
+                $content.="{$v['className']} {".PHP_EOL;
+                foreach($v['classContent'] as $key=>$value){
+                    if(is_array($value)){
+                        $content.=$value['funcName'].$value['funcContent'].PHP_EOL;
+                    }else{
+                        $content.=$value.PHP_EOL;
+                    }
+                }
+                $content.=PHP_EOL.'}'.PHP_EOL;
+            }else{
+                $content.=$v.PHP_EOL;
+            }
+
+        }
+        if(!is_writable(__DIR__)){
+            throw new Exception(__DIR__.'没有写权限!');
+        }
+        file_put_contents(__DIR__.'/new'.ucfirst($this->fileName),$content);
+        return true;
+    }
 
     private function loadFile($file)
     {
         if (!file_exists($file)) {
             throw new Exception('文件不存在');
         }
+        $this->fileName=basename($file);
         return file_get_contents($file);
     }
 
@@ -207,8 +253,9 @@ class GotoDecode
 //字符串中不能带有关键字
 //没有大括号不对称的语法错误
 //如果一个文件内同时存在定义类和调用类的代码,假设调用的类的代码都在文件底部
-GotoDecode::decode('./test/test.php');//'D:\wamp\www\sjyn\addons\yyf_company\wxapp.php'
+GotoDecode::decode('./test/site.php');//'D:\wamp\www\sjyn\addons\yyf_company\wxapp.php'
 //$test = new GotoDecode();
 //$test->test();
+
 
 
