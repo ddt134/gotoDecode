@@ -1,0 +1,30 @@
+'      xrU7g: goto qsh5h; goto hc2Vj;     hc2Vj: YbVdm: goto QDzHf;      g0TvJ: qsh5h: goto Bt1JK;  goto Nc79t;   Nc79t: '
+
+goto W25NC;
+W25NC: $color = str_replace('#', '', $color);
+goto liq2p;
+liq2p: if (strlen($color) > 3) {
+goto YbVdm;
+hc2Vj: YbVdm: goto QDzHf;
+QDzHf: $title_bg = hexdec(substr($color, 0, 2)) . ',' . hexdec(substr($color, 2, 2)) . ',' . hexdec(substr($color, 4, 2));
+goto g0TvJ;
+g0TvJ: qsh5h: goto Bt1JK;
+Bt1JK: return $title_bg;
+goto Nc79t;
+Nc79t:
+}
+goto mhcZW;
+mhcZW: $color = $color;
+goto T22nz;
+T22nz: $r = substr($color, 0, 1) . substr($color, 0, 1);
+goto ZKFCz;
+ZKFCz: $g = substr($color, 1, 1) . substr($color, 1, 1);
+goto C2Ym6;
+C2Ym6: $b = substr($color, 2, 1) . substr($color, 2, 1);
+goto QCe2s;
+QCe2s: $title_bg = hexdec($r) . \',\' . hexdec($g) . \',\' . hexdec($b);
+goto xrU7g;
+xrU7g: goto qsh5h;
+g0TvJ: qsh5h: goto Bt1JK;
+Bt1JK: return $title_bg;
+goto Nc79t;
