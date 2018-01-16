@@ -20,6 +20,9 @@ class b{
 
     }
 }
+class c{
+
+}
 
 
 $a='';
