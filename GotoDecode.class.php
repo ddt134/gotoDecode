@@ -29,7 +29,7 @@ class GotoDecode
         $fileContent = preg_replace('/\s*<\?php\s*/is', '', $fileContent);
         $className = '[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*';
         //preg_match_all('/\s*((?:abstract\s*|final\s*)?(?:interface|trait|class)\s*'.$className.'\s*(?:extends\s*'.$className.')?(?:implements\s*'.$className.')?)\s*{/is',$this->$content,$matches,PREG_SET_ORDER);
-        $res = preg_split('/\s*((?:abstract\s*|final\s*)?(?:interface|trait|class)\s*' . $className . '\s*(?:extends\s*' . $className . ')?(?:implements\s*' . $className . ')?)\s*(?={)/is', $fileContent, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);//
+        $res = preg_split('/\s*((?>abstract\s*|final\s*)?(?>interface|trait|class)\s*' . $className . '\s*(?>extends\s*' . $className . '\s*)?(?>implements\s*' . $className . '(?(?=\s*,\s*)\s*,\s*' . $className . '\s*|\s*))?)(?={)/is', $fileContent, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
         $count = count($res);
         if (!$res) {
             throw new Exception('划分类的时候出错');
@@ -71,7 +71,7 @@ class GotoDecode
             if(is_array($v)){
                 $string=preg_replace('/^\s*{|}\s*$/','',$v['classContent']);
                 $funcName = '[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*';
-                $res = preg_split('/\s*((?:public\s*|private\s*|protected\s*|final\s*|abstract\s*)?(?:static\s*)?function\s*' . $funcName . '\s*\(.*?\))\s*(?={)/is',$string, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+                $res = preg_split('/\s*((?>public\s*|private\s*|protected\s*|final\s*|abstract\s*)?(?>static\s*)?function\s*' . $funcName . '\s*\(.*?\))\s*(?={)/is',$string, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
                 if(!empty($res)){
                     $classArr[$k]['classContent']=[];
                     $count = count($res);
